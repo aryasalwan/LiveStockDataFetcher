@@ -18,6 +18,7 @@ def get_TSX_price(ticker):
         "query": (
             "query getQuoteForSymbols($symbols: [String]) {\n"
             "  quote: getDelayedQuotesFromQMBySymbols(symbols: $symbols) {\n"
+            "    price\n"
             "    bid\n"
             "    ask\n"
             "    bidsize\n"
@@ -64,7 +65,7 @@ def get_TSX_price(ticker):
     # print(f"ask:{res["data"]["quote"][0]["ask"]}  bid:{res["data"]["quote"][0]["bid"]}" )
     prices = []
     for i in range(len(res["data"]["quote"])):
-        price_ask = res["data"]["quote"][i]["ask"]
+        price_ask = res["data"]["quote"][i]["price"]
         prices.append(price_ask)
     return prices
 
@@ -88,10 +89,14 @@ def get_feed(last_title):
     title = feed["entries"][0]["title"]
     # publsihed=(feed["headers"]["date"])
     publsihed = feed["feed"]["updated"]
-    summary = feed["entries"][0]["summary"]
-    if last_title != title:
-        print(f"Bloomberg\n{title}\n{publsihed}\n{summary}")
-        return [title, publsihed, summary]
+    try:
+        summary = feed["entries"][0]["summary"]
+        if last_title != title:
+            print(f"Bloomberg\n{title}\n{publsihed}\n{summary}")
+            return [title, publsihed, summary]
+    except:
+        print("No summary")
+        return 
 
 import feedparser
 def get_feed_gnm(last_title):
@@ -108,6 +113,7 @@ def get_feed_gnm(last_title):
 
 last_title = ""
 last_title_gnm = ""
+before_open=False
 while True:
     priceES = round(
         yf.Ticker("ES=F").history(interval="1m", period="1d").iloc[-1]["Close"], 3
@@ -115,65 +121,73 @@ while True:
     priceG = round(
         yf.Ticker("GC=F").history(interval="1m", period="1d").iloc[-1]["Close"], 3
     )
-    #print(f"ES=F {priceES}   GC=F {priceG}")
+    if before_open==True:
+        print(f"ES=F {priceES}   GC=F {priceG}")
+    else:
+        priceM = round(
+            yf.Ticker("META").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceAMZ = round(
+            yf.Ticker("AMZN").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceSPXD = get_TSX_price(["SPXD"])[0]
+        priceSPY = round(
+            yf.Ticker("%5EGSPC").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        # priceBNS =round(yf.Ticker("BNS.TO").history(interval="1m",period="1d").iloc[-1]["Close"],3)
+        priceBNS = get_TSX_price(["BNS"])[0]
 
-    priceM = round(
-        yf.Ticker("META").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceAMZ = round(
-        yf.Ticker("AMZN").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceSPXD = get_TSX_price(["SPXD"])[0]
-    priceSPY = round(
-        yf.Ticker("%5EGSPC").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    # priceBNS =round(yf.Ticker("BNS.TO").history(interval="1m",period="1d").iloc[-1]["Close"],3)
-    priceBNS = get_TSX_price(["BNS"])[0]
-    priceGDXU = round(
-        yf.Ticker("GDXU.TO").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceARTG = round(
-        yf.Ticker("ARTG.V").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceQQD = round(
-        yf.Ticker("QQD.TO").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceNSDQ = round(
-        yf.Ticker("%5EIXIC").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    # priceTD =round(yf.Ticker("TD.TO").history(interval="1m",period="1d").iloc[-1]["Close"],3)
-    pricePLTD = round(
-        yf.Ticker("PLTD").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceZWU = round(
-        yf.Ticker("ZWU.TO").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceNVDA = round(
-        yf.Ticker("NVDA").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceTSLZ = round(
-        yf.Ticker("TSLZ").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    pricePLTR = round(
-        yf.Ticker("PLTR").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceBTCUSD=round(
-        yf.Ticker("BTC-USD").history(interval="1m", period="1d").iloc[-1]["Close"], 3
-    )
-    priceBTCY=get_TSX_price("BTCY")[0]
-    # news=yf.Search("tariffs",news_count=1).news
-    # breakpoint()
-    priceNA = get_TSX_price(["NA"])[0]
-    priceTD = get_TSX_price(["TD"])[0]
-    priceCM = get_TSX_price(["CM"])[0]
-    priceRY = get_TSX_price(["RY"])[0]
-    priceBMO = get_TSX_price(["BMO"])[0]
-    priceAGI = get_TSX_price(["AGI"])[0]
-    print(
-        f"\nES=F {priceES}  SPY:{priceSPY} SPXD: {priceSPXD} TSLZ: {priceTSLZ} GC=F {priceG} META {priceM} ZWU: {priceZWU}\
-AMZN {priceAMZ} PLTR:{pricePLTR} PLTD: {pricePLTD} BNS: {priceBNS} GDXU: {priceGDXU} ARTG: {priceARTG} AGI: {priceAGI} QQD:{priceQQD} NSDQ: {priceNSDQ} NVDA: {priceNVDA} \
-NA:{priceNA} TD:{priceTD} CM:{priceCM} RY:{priceRY} BMO:{priceBMO} BTC:{priceBTCUSD} BTCY:{priceBTCY}"
-    )
+        priceGDXU = round(
+            yf.Ticker("GDXU.TO").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceARTG = round(
+            yf.Ticker("ARTG.V").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceQQD = round(
+            yf.Ticker("QQD.TO").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceNSDQ = round(
+            yf.Ticker("%5EIXIC").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceTD =round(yf.Ticker("TD.TO").history(interval="1m",period="1d").iloc[-1]["Close"],3)
+        pricePLTD = round(
+            yf.Ticker("PLTD").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceZWU = round(
+            yf.Ticker("ZWU.TO").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceNVDA = round(
+            yf.Ticker("NVDA").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceTSLZ = round(
+            yf.Ticker("TSLZ").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        pricePLTR = round(
+            yf.Ticker("PLTR").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+        priceBTCUSD=round(
+            yf.Ticker("BTC-USD").history(interval="1m", period="1d").iloc[-1]["Close"], 3
+        )
+    
+        priceBTCY=get_TSX_price("BTCY")[0]
+        # news=yf.Search("tariffs",news_count=1).news
+        # breakpoint()
+        priceNA = get_TSX_price(["NA"])[0]
+        priceTD = get_TSX_price(["TD"])[0]
+        priceCM = get_TSX_price(["CM"])[0]
+        priceRY = get_TSX_price(["RY"])[0]
+        priceBMO = get_TSX_price(["BMO"])[0]
+        priceAGI = get_TSX_price(["AGI"])[0]
+    #     print(
+    #         f"\nES=F {priceES}  SPY:{priceSPY} SPXD: {priceSPXD} TSLZ: {priceTSLZ} GC=F {priceG} META {priceM} \
+    # AMZN {priceAMZ} PLTR:{pricePLTR} PLTD: {pricePLTD} BNS: {priceBNS} AGI: {priceAGI}  NSDQ: {priceNSDQ} NVDA: {priceNVDA} \
+    # NA:{priceNA} TD:{priceTD} CM:{priceCM} RY:{priceRY} BMO:{priceBMO} BTC:{priceBTCUSD} BTCY:{priceBTCY}"
+    #     )
+        print(
+            f"\nES=F {priceES}  SPY:{priceSPY} SPXD: {priceSPXD} TSLZ: {priceTSLZ} GC=F {priceG} META {priceM} ZWU: {priceZWU} \
+    AMZN {priceAMZ} PLTR:{pricePLTR} PLTD: {pricePLTD} BNS: {priceBNS} GDXU: {priceGDXU} ARTG: {priceARTG} AGI: {priceAGI} QQD:{priceQQD} NSDQ: {priceNSDQ} NVDA: {priceNVDA} \
+    NA:{priceNA} TD:{priceTD} CM:{priceCM} RY:{priceRY} BMO:{priceBMO} BTC:{priceBTCUSD} BTCY:{priceBTCY}"
+        )
     content = get_feed(last_title)
     if content != None:
         last_title = content[0]
